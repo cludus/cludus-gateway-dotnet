@@ -1,2 +1,2 @@
 # cludus-gateway-dotnet
-A dotnet gateway implementation
+Gateway implementation in c#
