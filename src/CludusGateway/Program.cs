@@ -10,7 +10,7 @@ var app = builder.Build();
 // <snippet_UseWebSockets>
 var webSocketOptions = new WebSocketOptions
 {
-    KeepAliveInterval = TimeSpan.FromMinutes(2)
+    //KeepAliveInterval = TimeSpan.FromMinutes(2)
 };
 
 app.UseWebSockets(webSocketOptions);
@@ -29,10 +29,11 @@ app.Use(async (context, next) =>
         });
 
         var logger = loggerFactory.CreateLogger<Program>();
-
+               
         if (context.WebSockets.IsWebSocketRequest)
-        {
+        {            
             using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+            
             await CludusGateway.Helpers.EchoHelper.Echo(webSocket, logger);
         }
         else

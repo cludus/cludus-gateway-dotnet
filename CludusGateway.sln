@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CCBC91A5-23B2-4E9C-A75C-EBE68AB5B40C}"
 	ProjectSection(SolutionItems) = preProject
 		Dockerfile = Dockerfile
+		tests\index.js = tests\index.js
 	EndProjectSection
 EndProject
 Global

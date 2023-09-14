@@ -9,11 +9,13 @@ internal static class EchoHelper
     internal static async Task Echo(WebSocket webSocket, ILogger<Program> logger)
     {
         var buffer = new byte[1024 * 4];
-        var receiveResult = await webSocket.ReceiveAsync(
-            new ArraySegment<byte>(buffer), CancellationToken.None);
 
         Interlocked.Increment(ref COUNT);
         logger.LogInformation($"Connection #{COUNT} accepted.");
+
+        var receiveResult = await webSocket.ReceiveAsync(
+            new ArraySegment<byte>(buffer), CancellationToken.None);
+
         while (!receiveResult.CloseStatus.HasValue)
         {
             await webSocket.SendAsync(
