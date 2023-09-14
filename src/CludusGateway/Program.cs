@@ -1,5 +1,8 @@
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -18,12 +21,19 @@ app.UseStaticFiles();
 
 app.Use(async (context, next) =>
 {
-    if (context.Request.Path == "/ws")
+    if (context.Request.Path == "/websocket")
     {
+        var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+        });
+
+        var logger = loggerFactory.CreateLogger<Program>();
+
         if (context.WebSockets.IsWebSocketRequest)
         {
             using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-            await CludusGateway.Helpers.EchoHelper.Echo(webSocket);
+            await CludusGateway.Helpers.EchoHelper.Echo(webSocket, logger);
         }
         else
         {
