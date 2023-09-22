@@ -3,8 +3,8 @@ import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 import http from 'k6/http';
 import ws from 'k6/ws';
 
-//const baseUrl = 'wss://cludus.xyz:8080/websocket';
-const baseUrl = 'wss://localhost:44383/websocket';
+const baseUrl = 'ws://tests.cludus.xyz:8080/websocket';
+//const baseUrl = 'wss://localhost:44383/websocket';
 
 export const options = {
     vus: 10000,
