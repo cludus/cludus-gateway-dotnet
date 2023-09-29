@@ -25,19 +25,13 @@ jobs:
       run: |
         git config --global user.email "admin@cludus.xyz"
         git config --global user.name "cludusadmin"
+
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Extract metadata (tags, labels) for Docker
-      id: meta
-      uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-      with:
-        images: |
-          my-docker-hub-namespace/my-docker-hub-repository
-          ghcr.io/${{ github.repository }}
+        password: ${{ secrets.GITHUB_TOKEN }}   
       
     - name: Build and push Docker images
       uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
