@@ -59,10 +59,10 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: ${{ GITVERSION_SEMVER }}
-        release_name: Release ${{ GITVERSION_SEMVER }}
+        tag_name: ${{ steps.gitversion.outputs.semVer }}
+        release_name: Release ${{ steps.gitversion.outputs.semVer }}
         body: |
-          Version ${{ GITVERSION_SEMVER }}
+          Version ${{ steps.gitversion.outputs.semVer }}
         draft: false
         prerelease: false
           
