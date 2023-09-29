@@ -29,6 +29,7 @@ jobs:
         versionSpec: '5.x'
 
     - name: Determine Version
+      id:   gitversion
       uses: gittools/actions/gitversion/execute@v0
     
     - name: Git Config
@@ -49,5 +50,5 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/cludus/gateway-dotnet:${{steps.gitversion.outputs.majorMinorPatch}}
+          ghcr.io/cludus/gateway-dotnet:${{ steps.gitversion.outputs.majorMinorPatch }}
           ghcr.io/cludus/gateway-dotnet:latest
