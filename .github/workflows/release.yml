@@ -53,8 +53,21 @@ jobs:
           ghcr.io/cludus/gateway-dotnet:${{ steps.gitversion.outputs.semVer }}
           ghcr.io/cludus/gateway-dotnet:latest
 
-    - name: Create git tag
-      run: |
-          git tag $GITVERSION_SEMVER
-    - name: Push git tag
-      run: git push origin $GITVERSION_SEMVER
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ GITVERSION_SEMVER }}
+        release_name: Release ${{ GITVERSION_SEMVER }}
+        body: |
+          Version ${{ GITVERSION_SEMVER }}
+        draft: false
+        prerelease: false
+          
+ #   - name: Create git tag
+ #     run: |
+ #         git tag $GITVERSION_SEMVER
+ #   - name: Push git tag
+ #     run: git push origin $GITVERSION_SEMVER
