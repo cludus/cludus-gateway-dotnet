@@ -19,9 +19,10 @@ jobs:
     
     steps:
     - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v0
+    - uses: actions/setup-gitversion@v1.0.0
       with:
-        versionSpec: '5.x'
+        gitversion-version: 5.1.1
+    - run: GitVersion
         
     - name: Check out the repo
       uses: actions/checkout@v4
@@ -36,10 +37,7 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Determine Version
-      uses: gittools/actions/gitversion/execute@v0
-    
+            
     - name: Build and push Docker images
       uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
       with:
