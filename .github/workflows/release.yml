@@ -53,6 +53,6 @@ jobs:
         release_name: Release ${{ steps.gitversion.outputs.semVer }}
         body: |
           Version ${{ steps.gitversion.outputs.semVer }}
-#        tags: |
-#          ghcr.io/cludus/gateway-dotnet:${{ steps.gitversion.outputs.semVer }}
-#          ghcr.io/cludus/gateway-dotnet:latest
+        tags: |
+          ghcr.io/cludus/gateway-dotnet:${{ steps.gitversion.outputs.semVer }}
+          ghcr.io/cludus/gateway-dotnet:latest
