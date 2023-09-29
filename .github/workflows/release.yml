@@ -64,10 +64,4 @@ jobs:
         body: |
           Version ${{ steps.gitversion.outputs.semVer }}
         draft: false
-        prerelease: false
-          
- #   - name: Create git tag
- #     run: |
- #         git tag $GITVERSION_SEMVER
- #   - name: Push git tag
- #     run: git push origin $GITVERSION_SEMVER
+        prerelease: false         
