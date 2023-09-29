@@ -55,6 +55,6 @@ jobs:
 
     - name: Create git tag
       run: |
-          git tag ${{ steps.gitversion.outputs.GitVersion_SemVer }}
+          git tag $GITVERSION_SEMVER
     - name: Push git tag
-      run: git push origin ${{ steps.gitversion.outputs.GitVersion_SemVer }}
+      run: git push origin $GITVERSION_SEMVER
