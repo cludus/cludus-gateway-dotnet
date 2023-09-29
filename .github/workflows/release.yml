@@ -50,5 +50,5 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/cludus/gateway-dotnet:${{ steps.gitversion.outputs.majorMinorPatch }}
+          ghcr.io/cludus/gateway-dotnet:${{ steps.gitversion.outputs.fullSemVer }}
           ghcr.io/cludus/gateway-dotnet:latest
