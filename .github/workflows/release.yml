@@ -17,15 +17,20 @@ jobs:
     runs-on: ubuntu-latest
     permissions: write-all
     
-    steps:
-    - name: Install GitVersion
-    - uses: actions/setup-gitversion@v1.0.0
-      with:
-        gitversion-version: 5.1.1
-    - run: GitVersion
-        
+    steps:        
     - name: Check out the repo
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0
+      with:
+        versionSpec: '5.x'
+
+    - name: Determine Version
+      uses: gittools/actions/gitversion/execute@v0
+    
     - name: Git Config
       run: |
         git config --global user.email "admin@cludus.xyz"
@@ -46,20 +51,3 @@ jobs:
         tags: |
           ghcr.io/cludus/gateway-dotnet:${{steps.gitversion.outputs.majorMinorPatch}}
           ghcr.io/cludus/gateway-dotnet:latest
-
-
-# ${{steps.gitversion.outputs.majorMinorPatch}}
-
-
-#    - name: Create Github Release
-#      id: create_release
-#     uses: actions/create-release@v1
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#      with:
-#        tag_name: ${{ github.ref }}
-#        release_name: Release ${{ github.ref }}
-#        body: |
-#          Version ${{ steps.version.outputs.release_tag }}
-#        draft: false
-#        prerelease: false
