@@ -1,3 +1,4 @@
+using CludusGateway.Endpoints;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -8,6 +9,9 @@ using Serilog.Debugging;
 SelfLog.Enable(Console.Error);
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddAuthentication().AddJwtBearer();
+builder.Services.AddAuthorization();
 
 builder.Host.UseSerilog((ctx, cfg) =>
 {
@@ -20,6 +24,8 @@ builder.Services.AddHealthChecks()
     .AddCheck("gateway-dotnet", () => HealthCheckResult.Healthy())
     .ForwardToPrometheus();
 
+builder.Services.AddScoped<WebSocketHandler>();
+
 var app = builder.Build();
 
 // <snippet_UseWebSockets>
@@ -27,9 +33,9 @@ var webSocketOptions = new WebSocketOptions
 {
     //KeepAliveInterval = TimeSpan.FromMinutes(2)
 };
+// </snippet_UseWebSockets>
 
 app.UseWebSockets(webSocketOptions);
-// </snippet_UseWebSockets>
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -47,24 +53,24 @@ app.UseHttpMetrics(options =>
     options.AddCustomLabel("logicalService", context => "gateway-dotnet");
 });
 
-app.UseRouting().UseEndpoints(endpoints =>
+app.UseAuthorization();
+
+app.Map("websocket", async context =>
 {
-    endpoints.MapMetrics();
-
-    endpoints.Map("websocket", async (context) =>
+    var webSocketHandler = context.RequestServices.GetRequiredService<WebSocketHandler>();
+    if (context.WebSockets.IsWebSocketRequest)
     {
-        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        if (context.WebSockets.IsWebSocketRequest)
-        {
-            using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+        using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
-            await CludusGateway.Helpers.EchoHelper.Echo(webSocket, logger);
-        }
-        else
+        if (webSocket is not null)
         {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await webSocketHandler.HandleAsync(webSocket, context.User);
         }
-    });
-});
+    }
+    else
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+    }
+}).RequireAuthorization();
 
 app.Run();

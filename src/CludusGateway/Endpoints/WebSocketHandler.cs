@@ -1,20 +1,27 @@
 ﻿using System.Net.WebSockets;
+using System.Security.Claims;
 
-namespace CludusGateway.Helpers;
+namespace CludusGateway.Endpoints;
 
-internal static class EchoHelper
+public class WebSocketHandler
 {
+    private ILogger<WebSocketHandler> logger;
+
     public static int COUNT;
 
-    internal static async Task Echo(WebSocket webSocket, ILogger<Program> logger)
+    public WebSocketHandler(ILogger<WebSocketHandler> logger)
+    {
+        this.logger = logger;
+    }
+
+    public async Task HandleAsync(WebSocket webSocket, ClaimsPrincipal principal)
     {
         var buffer = new byte[1024 * 4];
 
         Interlocked.Increment(ref COUNT);
         logger.LogInformation($"Connection #{COUNT} accepted.");
-
-        var receiveResult = await webSocket.ReceiveAsync(
-            new ArraySegment<byte>(buffer), CancellationToken.None);
+                
+        var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
         while (!receiveResult.CloseStatus.HasValue)
         {
@@ -29,7 +36,7 @@ internal static class EchoHelper
         }
 
         Interlocked.Decrement(ref COUNT);
-        
+
         await webSocket.CloseAsync(
             receiveResult.CloseStatus.Value,
             receiveResult.CloseStatusDescription,

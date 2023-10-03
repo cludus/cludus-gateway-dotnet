@@ -65,7 +65,7 @@
         var scheme = document.location.protocol === "https:" ? "wss" : "ws";
         var port = document.location.port ? (":" + document.location.port) : "";
 
-        connectionUrl.value = scheme + "://" + document.location.hostname + port + "/ws" ;
+        connectionUrl.value = scheme + "://" + document.location.hostname + port + "/websocket" ;
 
         function updateState() {
             function disable() {
@@ -133,7 +133,7 @@
 
         connectButton.onclick = function() {
             stateLabel.innerHTML = "Connecting";
-            socket = new WebSocket(connectionUrl.value);
+            socket = new WebSocket(connectionUrl.value + "?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFja3NlIiwic3ViIjoiYWNrc2UiLCJqdGkiOiJhOWEwNTFmZSIsImF1ZCI6WyJodHRwOi8vbG9jYWxob3N0OjUwMDQyIiwiaHR0cHM6Ly9sb2NhbGhvc3Q6NDQzODMiLCJodHRwOi8vbG9jYWxob3N0OjUxMTgiLCJodHRwczovL2xvY2FsaG9zdDo3MTgxIl0sIm5iZiI6MTY5NjI3NjEwMCwiZXhwIjoxNzA0MjI0OTAwLCJpYXQiOjE2OTYyNzYxMDIsImlzcyI6ImRvdG5ldC11c2VyLWp3dHMifQ.z0FRc8vg5ryr8BbItBKjccp6Heb8kbcn_j64mtuKeEI");
             socket.onopen = function (event) {
                 updateState();
                 commsLog.innerHTML += '<tr>' +
