@@ -53,24 +53,27 @@ app.UseHttpMetrics(options =>
     options.AddCustomLabel("logicalService", context => "gateway-dotnet");
 });
 
-app.UseAuthorization();
 
-app.Map("websocket", async context =>
+app.UseRouting().UseAuthentication().UseEndpoints(endpoints =>
 {
-    var webSocketHandler = context.RequestServices.GetRequiredService<WebSocketHandler>();
-    if (context.WebSockets.IsWebSocketRequest)
+    endpoints.MapMetrics();
+    endpoints.Map("websocket", async context =>
     {
-        using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-
-        if (webSocket is not null)
+        var webSocketHandler = context.RequestServices.GetRequiredService<WebSocketHandler>();
+        if (context.WebSockets.IsWebSocketRequest)
         {
-            await webSocketHandler.HandleAsync(webSocket, context.User);
+            using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+            if (webSocket is not null)
+            {
+                await webSocketHandler.HandleAsync(webSocket, context.User);
+            }
         }
-    }
-    else
-    {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-    }
-}).RequireAuthorization();
+        else
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        }
+    }).RequireAuthorization();
+});
 
 app.Run();
