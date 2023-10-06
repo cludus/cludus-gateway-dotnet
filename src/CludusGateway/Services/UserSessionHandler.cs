@@ -1,125 +1,110 @@
 ﻿using CludusGateway.Dtos;
 using System.Net.WebSockets;
+using System.Security.Claims;
+using Newtonsoft.Json;
 
 namespace CludusGateway.Services;
 
 public class UserSessionHandler
 {
-    private ILogger<UserSessionHandler> logger;
+    private WebSocket _session;
 
-    private WebSocket session;
+    private UserSessionRegistry _registry;
 
-    public UserSessionHandler(ILogger<UserSessionHandler> logger)
-    {
-        this.logger = logger;
-    }
-    /*
-    public static String FindUser(WebSocket session)
-    {
-        session.
-        return Objects.requireNonNull(session.getPrincipal()).getName();
-    }
+    private DateTime _lastUpdate;
 
-    public UserSessionHandler(WebSocketSession session, UserSessionRegistry registry)
+    private string _user;
+
+    public UserSessionHandler(WebSocket session, ClaimsPrincipal principal, UserSessionRegistry registry)
     {
-        this.session = session;
-        this.registry = registry;
-        this.user = findUser(session);
-        this.lastUpdated = LocalDateTime.now();
+        _session = session;
+        _registry = registry;
+        _lastUpdate = DateTime.Now;
+        _user = FindUser(principal);
     }
 
-    public boolean isIdle()
+    public static string FindUser(ClaimsPrincipal principal)
     {
-        return session.isOpen() && lastUpdated.isBefore(LocalDateTime.now().minusMinutes(2));
+        return principal.Identity.Name;
     }
 
-    public boolean isOpen()
+    public string User
     {
-        return session.isOpen();
+        get => _user;
     }
 
-    public void closeSession()
+    public bool Idle
     {
-        try
-        {
-            session.close(CloseStatus.NO_CLOSE_FRAME);
-        }
-        catch (Exception ex)
-        {
-            LOG.error(ex.getMessage(), ex);
-        }
+        get => Open && _lastUpdate < DateTime.Now.AddMinutes(-2);
     }
 
-    public void messageReceived(TextMessage message)
+    public bool Open
+    {
+        get => _session.State == WebSocketState.Open;
+    }
+
+    public void CloseSession()
+    {
+        _session.CloseAsync(WebSocketCloseStatus.NormalClosure, "status", CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public void MessageReceived(string message)
     {
         try
         {
-            var clientMsg = readClientMessage(message);
-            if (clientMsg.getAction() == ClientMessageDto.Actions.SEND)
+            var clientMsg = ReadClientMessage(message);
+            if (clientMsg.Action == ClientAction.Send)
             {
-                sendActionReceived(clientMsg);
+                SendActionReceived(clientMsg);
             }
-            else if (clientMsg.getAction() == ClientMessageDto.Actions.HEARTBEAT)
+            else if (clientMsg.Action == ClientAction.Heartbeat)
             {
-                heartBeatReceived(clientMsg);
+                HeartBeatReceived(clientMsg);
             }
-            var response = ServerMessageDto.ack();
-            sendMessage(toTextMessage(response));
-        }
-        catch (JsonSyntaxException ex)
-        {
-            var response = ServerMessageDto.error(ex.getMessage());
-            sendMessage(response);
+            var response = ServerMessageDto.Ack();
+            SendMessage(ToTextMessage(response));
         }
         catch (Exception ex)
         {
-            LOG.error(ex.getMessage(), ex);
-            var response = ServerMessageDto.error(ex.getMessage());
-            sendMessage(toTextMessage(response));
+            var response = ServerMessageDto.Error(ex.Message);
+            SendMessage(response);
         }
     }
 
-    void heartBeatReceived(ClientMessageDto clientMsg)
+    void HeartBeatReceived(ClientMessageDto clientMsg)
     {
-        lastUpdated = LocalDateTime.now();
+        _lastUpdate = DateTime.Now;
     }
 
-    void sendActionReceived(ClientMessageDto clientMsg) throws IOException
+    void SendActionReceived(ClientMessageDto clientMsg)
     {
-        lastUpdated = LocalDateTime.now();
-        var response = ServerMessageDto.message(user, clientMsg.getContent());
-    var reciptHandler = registry.getSession(clientMsg.getRecipient());
-        if(reciptHandler != null) {
-            reciptHandler.sendMessage(toTextMessage(response));
-        }
-        else {
-            LOG.warn("User {} is not connected.", clientMsg.getRecipient());
-        }
+        _lastUpdate = DateTime.Now;
+        var response = ServerMessageDto.Message(_user, clientMsg.Content);
+        var reciptHandler = _registry.GetSession(clientMsg.Recipient);
+        reciptHandler.SendMessage(ToTextMessage(response));
     }
 
-    private ClientMessageDto readClientMessage(TextMessage message)
-{
-    return GSON.fromJson(message.getPayload(), ClientMessageDto.class);
-    }
-
-    private TextMessage toTextMessage(ServerMessageDto message)
-{
-    return new TextMessage(GSON.toJson(message));
-}
-
-synchronized void sendMessage(TextMessage message) {
-    try
+    private ClientMessageDto ReadClientMessage(string message)
     {
-        session.sendMessage(message);
+        return JsonConvert.DeserializeObject<ClientMessageDto>(message);
     }
-    catch (Exception ex)
-    {
-        LOG.error(ex.getMessage(), ex);
-    }
-}
 
-void sendMessage(ServerMessageDto message)
-{
-    sendMessage(toTextMessage(message));
-}*/
+    private string ToTextMessage(ServerMessageDto dto)
+    {
+        return JsonConvert.SerializeObject(dto);
+    }
+    
+    ValueTask SendMessage(string message) {
+        byte[] data = System.Text.Encoding.UTF8.GetBytes (message);
+        var buffer = new ReadOnlyMemory<byte>(data);
+        return _session.SendAsync(buffer, 
+            WebSocketMessageType.Text, 
+            WebSocketMessageFlags.EndOfMessage, 
+            CancellationToken.None);
+    }
+
+    void SendMessage(ServerMessageDto message)
+    {
+        SendMessage(ToTextMessage(message));
+    }
 }

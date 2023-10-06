@@ -1,4 +1,5 @@
 using CludusGateway.Endpoints;
+using CludusGateway.Services;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -24,6 +25,7 @@ builder.Services.AddHealthChecks()
     .AddCheck("gateway-dotnet", () => HealthCheckResult.Healthy())
     .ForwardToPrometheus();
 
+builder.Services.AddSingleton<UserSessionRegistry>();
 builder.Services.AddScoped<WebSocketHandler>();
 
 var app = builder.Build();
@@ -39,7 +41,7 @@ app.UseWebSockets(webSocketOptions);
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.UseSerilogRequestLogging();
+//app.UseSerilogRequestLogging();
 
 app.MapHealthChecks("/_health", new HealthCheckOptions
 {
@@ -57,17 +59,16 @@ app.UseHttpMetrics(options =>
 app.UseRouting().UseAuthentication().UseEndpoints(endpoints =>
 {
     endpoints.MapMetrics();
-    endpoints.Map("websocket", async context =>
+    endpoints.Map("chat", async context =>
     {
+        var registry = app.Services.GetRequiredService<UserSessionRegistry>();
         var webSocketHandler = context.RequestServices.GetRequiredService<WebSocketHandler>();
         if (context.WebSockets.IsWebSocketRequest)
         {
+            
             using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-
-            if (webSocket is not null)
-            {
-                await webSocketHandler.HandleAsync(webSocket, context.User);
-            }
+            registry.Register(webSocket, context.User);
+            await webSocketHandler.HandleAsync(webSocket, context.User);
         }
         else
         {

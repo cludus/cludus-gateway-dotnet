@@ -1,74 +1,72 @@
-﻿using CludusGateway.Endpoints;
-using Prometheus;
-using Serilog;
+﻿using Prometheus;
 using System.Net.WebSockets;
+using System.Security.Claims;
 
 namespace CludusGateway.Services;
 
 public class UserSessionRegistry
 {
-    private ILogger<UserSessionRegistry> logger;
+    private ILogger<UserSessionRegistry> _logger;
 
-    private Dictionary<string, WebSocket> sessions = new Dictionary<string, WebSocket>();
+    private Dictionary<string, UserSessionHandler> _sessions = new Dictionary<string, UserSessionHandler>();
+    
+    private readonly Gauge _msgCount;
 
     public UserSessionRegistry(ILogger<UserSessionRegistry> logger)
     {
-        this.logger = logger;
+        _logger = logger;
+        _msgCount = Metrics.CreateGauge("cludus_gateway_connections_count", "# of user connections received at Cludus Gateway");
     }
-    /*
-    public UserSessionHandler Register(WebSocket session)
+
+    public UserSessionHandler Register(WebSocket session, ClaimsPrincipal principal)
     {
-        this.logger.LogInformation("registering a new websocket connection {}", UserSessionHandler.FindUser(session));
-        var result = new UserSessionHandler(session, this);
-        sessions.Put(result.getUser(), result);
-        updateMetrics();
+        _logger.LogInformation("registering a new websocket connection {}", UserSessionHandler.FindUser(principal));
+        var result = new UserSessionHandler(session, principal, this);
+        _sessions.Add(result.User, result);
+        UpdateMetrics();
         return result;
     }
 
-    public UserSessionHandler getSession(String user)
+    public UserSessionHandler GetSession(String user)
     {
-        return sessionsMap.get(user);
+        return _sessions[user];
     }
 
-    public UserSessionHandler getSession(WebSocketSession session)
+    public UserSessionHandler GetSession(ClaimsPrincipal principal)
     {
-        return getSession(UserSessionHandler.findUser(session));
+        return GetSession(UserSessionHandler.FindUser(principal));
     }
 
-    public void sessionClosed(WebSocketSession session, CloseStatus status)
+    public void SessionClosed(WebSocket session, ClaimsPrincipal principal, WebSocketReceiveResult result)
     {
-        var userSession = getSession(session);
-        if (session.isOpen())
+        var userSession = GetSession(principal);
+        if (session.State == WebSocketState.Open)
         {
-            try
-            {
-                LOG.info("closing a websocket connection {}", UserSessionHandler.findUser(session));
-                session.close(status);
-                sessionsMap.remove(userSession.getUser());
-            }
-            catch (Exception ex)
-            {
-                LOG.error(ex.getMessage(), ex);
-            }
+            session.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None).GetAwaiter().GetResult();
+            _sessions.Remove(userSession.User);
         }
     }
-
-    public void evit()
+    
+    public void Evit()
     {
-        sessionsMap.values().stream()
-                .filter(UserSessionHandler::isIdle)
-                .forEach(UserSessionHandler::closeSession);
-        List<String> toRemove = sessionsMap.values().stream()
-                .filter(x-> !x.isOpen())
-                .map(UserSessionHandler::getUser)
-                .toList();
-        LOG.info("evicting  {} websocket connections", toRemove.size());
-        toRemove.forEach(k->sessionsMap.remove(k));
-        updateMetrics();
+        var idles = _sessions.Values.Where(x => x.Idle).ToList();
+        foreach (var s in idles)
+        {
+            s.CloseSession();
+        }
+
+        var closed = _sessions.Values.Where(x => !x.Open)
+                                               .Select(x => x.User)
+                                               .ToList();
+        foreach (var user in closed)
+        {
+            _sessions.Remove(user);
+        }
+        UpdateMetrics();
     }
 
-    private void updateMetrics()
+    private void UpdateMetrics()
     {
-        Metrics.gauge("cludus_gateway_connections_count", sessionsMap.size());
-    }*/
+        _msgCount.Set(_sessions.Count);
+    }
 }

@@ -1,47 +1,37 @@
 ﻿using System.Net.WebSockets;
 using System.Security.Claims;
+using System.Text;
+using CludusGateway.Dtos;
+using CludusGateway.Services;
+using Newtonsoft.Json;
 
 namespace CludusGateway.Endpoints;
 
 public class WebSocketHandler
 {
-    private ILogger<WebSocketHandler> logger;
+    private ILogger<WebSocketHandler> _logger;
 
-    public static int COUNT;
+    private UserSessionRegistry _registry;
 
-    public WebSocketHandler(ILogger<WebSocketHandler> logger)
+    public WebSocketHandler(ILogger<WebSocketHandler> logger, UserSessionRegistry registry)
     {
-        this.logger = logger;
+        _logger = logger;
+        _registry = registry;
     }
 
     public async Task HandleAsync(WebSocket webSocket, ClaimsPrincipal principal)
     {
-        var buffer = new byte[1024 * 4];
+        var data = new byte[1024 * 4];
+        var buffer = new ArraySegment<byte>(data);
 
-        Interlocked.Increment(ref COUNT);
-        logger.LogInformation($"Connection #{COUNT} accepted.");
-                
-        var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-        while (!receiveResult.CloseStatus.HasValue)
+        var result = await webSocket.ReceiveAsync(buffer, CancellationToken.None);
+        while (!result.CloseStatus.HasValue)
         {
-            await webSocket.SendAsync(
-                new ArraySegment<byte>(buffer, 0, receiveResult.Count),
-                receiveResult.MessageType,
-                receiveResult.EndOfMessage,
-                CancellationToken.None);
-
-            receiveResult = await webSocket.ReceiveAsync(
-                new ArraySegment<byte>(buffer), CancellationToken.None);
+            string message = Encoding.ASCII.GetString(data, 0, result.Count);
+            _registry.GetSession(principal).MessageReceived(message);
+            result = await webSocket.ReceiveAsync(buffer, CancellationToken.None);
         }
 
-        Interlocked.Decrement(ref COUNT);
-
-        await webSocket.CloseAsync(
-            receiveResult.CloseStatus.Value,
-            receiveResult.CloseStatusDescription,
-            CancellationToken.None);
-
-        logger.LogInformation($"Connection #{COUNT} closed.");
+        _registry.SessionClosed(webSocket, principal, result);
     }
 }

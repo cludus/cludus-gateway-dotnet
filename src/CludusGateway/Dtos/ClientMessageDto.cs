@@ -6,12 +6,12 @@ public record ClientMessageDto(ClientAction Action, String Recipient, String Con
 
 public enum ClientAction
 {
-    /**
-     * The message should be sent to the recipient
-     */
-    SEND,
-    /**
-     * The message is a simple heartbeat message, it should be recorded.
-     */
-    HEARTBEAT
+    /// <summary>
+    /// The message should be sent to the recipient
+    /// </summary>
+    Send,
+    /// <summary>
+    /// The message is a simple heartbeat message, it should be recorded.
+    /// </summary>
+    Heartbeat
 }
