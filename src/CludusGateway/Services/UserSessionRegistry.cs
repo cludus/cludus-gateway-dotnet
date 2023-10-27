@@ -21,13 +21,16 @@ public class UserSessionRegistry
     public UserSessionHandler Register(WebSocket session, ClaimsPrincipal principal)
     {
         _logger.LogInformation("registering a new websocket connection {}", UserSessionHandler.FindUser(principal));
+
         var result = new UserSessionHandler(session, principal, this);
         _sessions.Add(result.User, result);
+
         UpdateMetrics();
+        
         return result;
     }
 
-    public UserSessionHandler GetSession(String user)
+    public UserSessionHandler GetSession(string user)
     {
         return _sessions[user];
     }
@@ -55,13 +58,12 @@ public class UserSessionRegistry
             s.CloseSession();
         }
 
-        var closed = _sessions.Values.Where(x => !x.Open)
-                                               .Select(x => x.User)
-                                               .ToList();
+        var closed = _sessions.Values.Where(x => !x.Open).Select(x => x.User);
         foreach (var user in closed)
         {
             _sessions.Remove(user);
         }
+
         UpdateMetrics();
     }
 

@@ -1,6 +1,6 @@
 ﻿namespace CludusGateway.Dtos;
 
-public record ClientMessageDto(ClientAction Action, String Recipient, String Content)
+public record ClientMessageDto(ClientAction Action, string Recipient, string Content)
 {
 }
 
