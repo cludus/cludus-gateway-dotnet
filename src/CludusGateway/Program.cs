@@ -74,7 +74,7 @@ app.UseRouting().UseAuthentication().UseEndpoints(endpoints =>
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
         }
-    }).RequireAuthorization();
+    });
 });
 
 app.Run();
